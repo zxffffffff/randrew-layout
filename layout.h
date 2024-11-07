@@ -1,19 +1,15 @@
 #ifndef LAY_INCLUDE_HEADER
 #define LAY_INCLUDE_HEADER
 
-// Do this:
-//
-//   #define LAY_IMPLEMENTATION
-//
-// in exactly one C or C++ file in your project before you include layout.h.
-// Your includes should look like this:
+// 在项目中的一个 C 或 C++ 文件中定义 LAY_IMPLEMENTATION，然后在该文件中包含 layout.h。
+// 你的包含语句应该如下所示：
 //
 //   #include ...
 //   #include ...
 //   #define LAY_IMPLEMENTATION
 //   #include "layout.h"
 //
-// All other files in your project should not define LAY_IMPLEMENTATION.
+// 项目中的其他文件不应该定义 LAY_IMPLEMENTATION。
 
 #include <stdint.h>
 
@@ -21,15 +17,14 @@
 #define LAY_EXPORT extern
 #endif
 
-// Users of this library can define LAY_ASSERT if they would like to use an
-// assert other than the one from assert.h.
+// 如果用户希望使用自定义的断言，可以定义 LAY_ASSERT。
+// 否则，默认使用 assert.h 中的断言。
 #ifndef LAY_ASSERT
 #include <assert.h>
 #define LAY_ASSERT assert
 #endif
 
-// 'static inline' for things we always want inlined -- the compiler should not
-// even have to consider not inlining these.
+// 'static inline' 用于我们希望始终内联的代码 -- 编译器不应考虑不进行内联。
 #if defined(__GNUC__) || defined(__clang__)
 #define LAY_STATIC_INLINE __attribute__((always_inline)) static inline
 #elif defined(_MSC_VER)
@@ -47,30 +42,25 @@ typedef int16_t lay_scalar;
 
 #define LAY_INVALID_ID UINT32_MAX
 
-// GCC and Clang allow us to create vectors based on a type with the
-// vector_size extension. This will allow us to access individual components of
-// the vector via indexing operations.
+// GCC 和 Clang 允许我们使用 vector_size 扩展创建基于某个类型的向量。
+// 这使我们可以通过索引操作访问向量的各个组件。
 #if defined(__GNUC__) || defined(__clang__)
 
-// Using floats for coordinates takes up more space than using int16. 128 bits
-// for a four-component vector.
 #ifdef LAY_FLOAT
+// 使用浮动类型坐标比使用 int16 占用更多空间。一个四元素向量占用 128 位。
 typedef float lay_vec4 __attribute__ ((__vector_size__ (16), aligned(4)));
 typedef float lay_vec2 __attribute__ ((__vector_size__ (8), aligned(4)));
-// Integer version uses 64 bits for a four-component vector.
 #else
+// 整数版本使用 64 位存储四元素向量。
 typedef int16_t lay_vec4 __attribute__ ((__vector_size__ (8), aligned(2)));
 typedef int16_t lay_vec2 __attribute__ ((__vector_size__ (4), aligned(2)));
 #endif // LAY_FLOAT
 
-// Note that we're not actually going to make any explicit use of any
-// platform's SIMD instructions -- we're just using the vector extension for
-// more convenient syntax. Therefore, we can specify more relaxed alignment
-// requirements. See the end of this file for some notes about this.
+// 请注意，我们并不打算显式使用任何平台的 SIMD 指令 -- 我们仅仅使用向量扩展提供更方便的语法。
+// 因此，我们可以指定更宽松的对齐要求。有关此的说明请参见文件结尾。
 
-// MSVC doesn't have the vetor_size attribute, but we want convenient indexing
-// operators for our layout logic code. Therefore, we force C++ compilation in
-// MSVC, and use C++ operator overloading.
+// MSVC 没有 vector_size 属性，但我们希望为布局逻辑代码提供便捷的索引操作符。
+// 因此，在 MSVC 中强制使用 C++ 编译，并使用 C++ 操作符重载。
 #elif defined(_MSC_VER)
 struct lay_vec4 {
     lay_scalar xyzw[4];
@@ -103,7 +93,7 @@ typedef struct lay_context {
     lay_id count;
 } lay_context;
 
-// Container flags to pass to lay_set_container()
+// 传递给 lay_set_container() 的容器标志
 typedef enum lay_box_flags {
     // flex-direction (bit 0+1)
 
@@ -138,21 +128,21 @@ typedef enum lay_box_flags {
     LAY_JUSTIFY = 0x018
 
     // align-items
-    // can be implemented by putting a flex container in a layout container,
-    // then using LAY_TOP, LAY_BOTTOM, LAY_VFILL, LAY_VCENTER, etc.
-    // FILL is equivalent to stretch/grow
+    // 可以通过将 flex 容器放入布局容器中来实现，
+    // 然后使用 LAY_TOP、LAY_BOTTOM、LAY_VFILL、LAY_VCENTER 等。
+    // FILL 相当于拉伸
 
     // align-content (start, end, center, stretch)
-    // can be implemented by putting a flex container in a layout container,
-    // then using LAY_TOP, LAY_BOTTOM, LAY_VFILL, LAY_VCENTER, etc.
-    // FILL is equivalent to stretch; space-between is not supported.
+    // 可以通过将 flex 容器放入布局容器中来实现，
+    // 然后使用 LAY_TOP、LAY_BOTTOM、LAY_VFILL、LAY_VCENTER 等。
+    // FILL 相当于拉伸；不支持 space-between。
 } lay_box_flags;
 
-// child layout flags to pass to lay_set_behave()
+// 传递给 lay_set_behave() 的子布局标志
 typedef enum lay_layout_flags {
     // attachments (bit 5-8)
-    // fully valid when parent uses LAY_LAYOUT model
-    // partially valid when in LAY_FLEX model
+    // 当父项使用 LAY_LAYOUT 模式时完全有效
+    // 在 LAY_FLEX 模式下部分有效
 
     // anchor to left item or left side of parent
     LAY_LEFT = 0x020,
@@ -238,176 +228,137 @@ LAY_STATIC_INLINE lay_vec4 lay_vec4_xyzw(lay_scalar x, lay_scalar y, lay_scalar 
 #endif
 }
 
-// Call this on a context before using it. You must also call this on a context
-// if you would like to use it again after calling lay_destroy_context() on it.
+// 在使用上下文之前调用此函数。
+// 如果您想在调用 lay_destroy_context() 后再次使用此上下文，也必须调用此函数。
 LAY_EXPORT void lay_init_context(lay_context *ctx);
 
-// Reserve enough heap memory to contain `count` items without needing to
-// reallocate. The initial lay_init_context() call does not allocate any heap
-// memory, so if you init a context and then call this once with a large enough
-// number for the number of items you'll create, there will not be any further
-// reallocations.
+// 为了容纳 `count` 个项而预留足够的堆内存，而不需要重新分配。
+// 初始的 lay_init_context() 调用不会分配任何堆内存，
+// 因此，如果您初始化了一个上下文并且之后调用此函数，并为将要创建的项指定足够大的数量，则不会发生进一步的重新分配。
 LAY_EXPORT void lay_reserve_items_capacity(lay_context *ctx, lay_id count);
 
-// Frees any heap allocated memory used by a context. Don't call this on a
-// context that did not have lay_init_context() call on it. To reuse a context
-// after destroying it, you will need to call lay_init_context() on it again.
+// 释放上下文使用的所有堆内存。
+// 如果上下文没有调用 lay_init_context()，则不应调用此函数。
+// 要在销毁上下文后重用它，您需要再次调用 lay_init_context()。
 LAY_EXPORT void lay_destroy_context(lay_context *ctx);
 
-// Clears all of the items in a context, setting its count to 0. Use this when
-// you want to re-declare your layout starting from the root item. This does not
-// free any memory or perform allocations. It's safe to use the context again
-// after calling this. You should probably use this instead of init/destroy if
-// you are recalculating your layouts in a loop.
+// 清除上下文中的所有项，将其计数设置为 0。
+// 当您想要从根项重新声明布局时使用此函数。此操作不会释放任何内存或执行分配。
+// 调用此函数后可以安全地再次使用上下文。
+// 如果您在循环中重新计算布局，可能应该使用此函数，而不是调用 init/destroy。
 LAY_EXPORT void lay_reset_context(lay_context *ctx);
 
-// Performs the layout calculations, starting at the root item (id 0). After
-// calling this, you can use lay_get_rect() to query for an item's calculated
-// rectangle. If you use procedures such as lay_append() or lay_insert() after
-// calling this, your calculated data may become invalid if a reallocation
-// occurs.
+// 执行布局计算，从根项（id 为 0）开始。
+// 在调用此函数后，您可以使用 lay_get_rect() 查询项的计算矩形。
+// 如果在调用此函数后使用 lay_append() 或 lay_insert() 等过程，若发生重新分配，您的计算数据可能会变得无效。
 //
-// You should prefer to recreate your items starting from the root instead of
-// doing fine-grained updates to the existing context.
+// 您应该更倾向于从根项重新创建项目，而不是对现有上下文进行细粒度更新。
 //
-// However, it's safe to use lay_set_size on an item, and then re-run
-// lay_run_context. This might be useful if you are doing a resizing animation
-// on items in a layout without any contents changing.
+// 但是，如果您只是对布局中的项进行缩放动画而没有更改其内容，
+// 那么使用 lay_set_size 更新项，然后重新运行 lay_run_context 是安全的。
 LAY_EXPORT void lay_run_context(lay_context *ctx);
 
-// Like lay_run_context(), this procedure will run layout calculations --
-// however, it lets you specify which item you want to start from.
-// lay_run_context() always starts with item 0, the first item, as the root.
-// Running the layout calculations from a specific item is useful if you want
-// need to iteratively re-run parts of your layout hierarchy, or if you are only
-// interested in updating certain subsets of it. Be careful when using this --
-// it's easy to generated bad output if the parent items haven't yet had their
-// output rectangles calculated, or if they've been invalidated (e.g. due to
-// re-allocation).
+// 与 lay_run_context() 类似，此过程将执行布局计算——但它允许您指定要从哪个项开始。
+// lay_run_context() 总是从项 0，即第一个项，作为根项开始。
+// 从特定项运行布局计算在您需要迭代地重新运行布局层次结构的部分时很有用，或者如果您只对更新它的某些子集感兴趣。
+// 使用时要小心——如果父项尚未计算其输出矩形，或者它们已经失效（例如由于重新分配），很容易生成错误的输出。
 LAY_EXPORT void lay_run_item(lay_context *ctx, lay_id item);
 
-// Performing a layout on items where wrapping is enabled in the parent
-// container can cause flags to be modified during the calculations. If you plan
-// to call lay_run_context or lay_run_item multiple times without calling
-// lay_reset, and if you have a container that uses wrapping, and if the width
-// or height of the container may have changed, you should call
-// lay_clear_item_break on all of the children of a container before calling
-// lay_run_context or lay_run_item again. If you don't, the layout calculations
-// may perform unnecessary wrapping.
+// 在启用换行的父容器中进行布局时，可能会在计算过程中修改标志。
+// 如果您计划多次调用 lay_run_context 或 lay_run_item，而不调用 lay_reset，
+// 并且如果容器使用了换行，且容器的宽度或高度可能已更改，您应在再次调用 lay_run_context 
+// 或 lay_run_item 之前调用 lay_clear_item_break 来清除所有子项的换行标志。
+// 如果不清除，布局计算可能会进行不必要的换行。
 //
-// This requirement may be changed in the future.
+// 此要求未来可能会更改。
 //
-// Calling this will also reset any manually-specified breaking. You will need
-// to set the manual breaking again, or simply not call this on any items that
-// you know you wanted to break manually.
+// 调用此函数还会重置所有手动指定的换行。您需要再次设置手动换行，或者干脆不在任何希望手动换行的项上调用此函数。
 //
-// If you clear your context every time you calculate your layout, or if you
-// don't use wrapping, you don't need to call this.
+// 如果您每次计算布局时都清除上下文，或者如果不使用换行，则不需要调用此函数。
 LAY_EXPORT void lay_clear_item_break(lay_context *ctx, lay_id item);
 
-// Returns the number of items that have been created in a context.
+// 返回在上下文中已创建项的数量。
 LAY_EXPORT lay_id lay_items_count(lay_context *ctx);
 
-// Returns the number of items the context can hold without performing a
-// reallocation.
+// 返回上下文在不进行重新分配的情况下可以容纳的项数。
 LAY_EXPORT lay_id lay_items_capacity(lay_context *ctx);
 
-// Create a new item, which can just be thought of as a rectangle. Returns the
-// id (handle) used to identify the item.
+// 创建一个新项，可以简单地认为它是一个矩形。返回用于标识该项的 id（句柄）。
 LAY_EXPORT lay_id lay_item(lay_context *ctx);
 
-// Inserts an item into another item, forming a parent - child relationship. An
-// item can contain any number of child items. Items inserted into a parent are
-// put at the end of the ordering, after any existing siblings.
+// 将项插入到另一个项中，形成父子关系。
+// 一个项可以包含任意数量的子项。插入到父项中的项会被放置在排序的末尾，在所有现有兄弟项之后。
 LAY_EXPORT void lay_insert(lay_context *ctx, lay_id parent, lay_id child);
 
-// lay_append inserts an item as a sibling after another item. This allows
-// inserting an item into the middle of an existing list of items within a
-// parent. It's also more efficient than repeatedly using lay_insert(ctx,
-// parent, new_child) in a loop to create a list of items in a parent, because
-// it does not need to traverse the parent's children each time. So if you're
-// creating a long list of children inside of a parent, you might prefer to use
-// this after using lay_insert to insert the first child.
+// lay_append 将一个项作为兄弟项插入到另一个项之后。
+// 这允许您将项插入到父项中现有项列表的中间。
+// 与在循环中反复使用 lay_insert(ctx, parent, new_child) 创建父项的项列表相比，它更高效，因为它不需要每次遍历父项的子项。
+// 因此，如果您在父项中创建一个长的子项列表，可能会更倾向于在使用 lay_insert 插入第一个子项后使用此方法。
 LAY_EXPORT void lay_append(lay_context *ctx, lay_id earlier, lay_id later);
 
-// Like lay_insert, but puts the new item as the first child in a parent instead
-// of as the last.
+// 与 lay_insert 相似，但将新项作为父项的第一个子项，而不是最后一个。
 LAY_EXPORT void lay_push(lay_context *ctx, lay_id parent, lay_id child);
 
-// Gets the size that was set with lay_set_size or lay_set_size_xy. The _xy
-// version writes the output values to the specified addresses instead of
-// returning the values in a lay_vec2.
+// 获取通过 lay_set_size 或 lay_set_size_xy 设置的大小。_xy 版本将输出值写入指定的地址，而不是返回 lay_vec2 中的值。
 LAY_EXPORT lay_vec2 lay_get_size(lay_context *ctx, lay_id item);
 LAY_EXPORT void lay_get_size_xy(lay_context *ctx, lay_id item, lay_scalar *x, lay_scalar *y);
 
-// Sets the size of an item. The _xy version passes the width and height as
-// separate arguments, but functions the same.
+// 设置项的大小。_xy 版本将宽度和高度作为单独的参数传递，但功能相同。
 LAY_EXPORT void lay_set_size(lay_context *ctx, lay_id item, lay_vec2 size);
 LAY_EXPORT void lay_set_size_xy(lay_context *ctx, lay_id item, lay_scalar width, lay_scalar height);
 
-// Set the flags on an item which determines how it behaves as a parent. For
-// example, setting LAY_COLUMN will make an item behave as if it were a column
-// -- it will lay out its children vertically.
+// 设置项的标志，决定它作为父项的行为。例如，设置 LAY_COLUMN 会使项表现得像一个列——它会垂直排列其子项。
 LAY_EXPORT void lay_set_contain(lay_context *ctx, lay_id item, uint32_t flags);
 
-// Set the flags on an item which determines how it behaves as a child inside of
-// a parent item. For example, setting LAY_VFILL will make an item try to fill
-// up all available vertical space inside of its parent.
+// 设置项的标志，决定它作为父项内部子项的行为。例如，设置 LAY_VFILL 会使项尽量填满父项内所有可用的垂直空间。
 LAY_EXPORT void lay_set_behave(lay_context *ctx, lay_id item, uint32_t flags);
 
-// Get the margins that were set by lay_set_margins. The _ltrb version writes
-// the output values to the specified addresses instead of returning the values
-// in a lay_vec4.
-// l: left, t: top, r: right, b: bottom
+// 获取通过 lay_set_margins 设置的边距。_ltrb 版本将输出值写入指定的地址，而不是返回 lay_vec4 中的值。
 LAY_EXPORT lay_vec4 lay_get_margins(lay_context *ctx, lay_id item);
 LAY_EXPORT void lay_get_margins_ltrb(lay_context *ctx, lay_id item, lay_scalar *l, lay_scalar *t, lay_scalar *r, lay_scalar *b);
 
-// Set the margins on an item. The components of the vector are:
+// 设置项的边距。向量的组件是：
 // 0: left, 1: top, 2: right, 3: bottom.
 LAY_EXPORT void lay_set_margins(lay_context *ctx, lay_id item, lay_vec4 ltrb);
 
-// Same as lay_set_margins, but the components are passed as separate arguments
+// 与 lay_set_margins 相同，但组件作为单独的参数传递。
 // (left, top, right, bottom).
 LAY_EXPORT void lay_set_margins_ltrb(lay_context *ctx, lay_id item, lay_scalar l, lay_scalar t, lay_scalar r, lay_scalar b);
 
-// Get the pointer to an item in the buffer by its id. Don't keep this around --
-// it will become invalid as soon as any reallocation occurs. Just store the id
-// instead (it's smaller, anyway, and the lookup cost will be nothing.)
+// 通过项的 id 获取缓冲区中的项指针。
+// 不要保留此指针——一旦发生任何重新分配，它将变得无效。只需存储 id（它更小，而且查找成本为零）。
 LAY_STATIC_INLINE lay_item_t *lay_get_item(const lay_context *ctx, lay_id id)
 {
     LAY_ASSERT(id != LAY_INVALID_ID && id < ctx->count);
     return ctx->items + id;
 }
 
-// Get the id of first child of an item, if any. Returns LAY_INVALID_ID if there
-// is no child.
+// 获取项的第一个子项的 id（如果有的话）。如果没有子项，则返回 LAY_INVALID_ID。
 LAY_STATIC_INLINE lay_id lay_first_child(const lay_context *ctx, lay_id id)
 {
     const lay_item_t *pitem = lay_get_item(ctx, id);
     return pitem->first_child;
 }
 
-// Get the id of the next sibling of an item, if any. Returns LAY_INVALID_ID if
-// there is no next sibling.
+// 获取项的下一个兄弟项的 id（如果有的话）。如果没有下一个兄弟项，则返回 LAY_INVALID_ID。
 LAY_STATIC_INLINE lay_id lay_next_sibling(const lay_context *ctx, lay_id id)
 {
     const lay_item_t *pitem = lay_get_item(ctx, id);
     return pitem->next_sibling;
 }
 
-// Returns the calculated rectangle of an item. This is only valid after calling
-// lay_run_context and before any other reallocation occurs. Otherwise, the
-// result will be undefined. The vector components are:
-// 0: x starting position, 1: y starting position
-// 2: width, 3: height
+// 返回项的计算矩形。
+// 只有在调用 lay_run_context 后且在发生任何重新分配之前，这个值才有效。否则，结果将是未定义的。
+// 向量的组件是：
+// 0: x 起始位置, 1: y 起始位置
+// 2: 宽度, 3: 高度
 LAY_STATIC_INLINE lay_vec4 lay_get_rect(const lay_context *ctx, lay_id id)
 {
     LAY_ASSERT(id != LAY_INVALID_ID && id < ctx->count);
     return ctx->rects[id];
 }
 
-// The same as lay_get_rect, but writes the x,y positions and width,height
-// values to the specified addresses instead of returning them in a lay_vec4.
+// 与 lay_get_rect 相同，但将 x, y 位置和宽度、高度的值写入指定的地址，而不是返回 lay_vec4 中的值。
 LAY_STATIC_INLINE void lay_get_rect_xywh(
         const lay_context *ctx, lay_id id,
         lay_scalar *x, lay_scalar *y, lay_scalar *width, lay_scalar *height)
@@ -425,21 +376,15 @@ LAY_STATIC_INLINE void lay_get_rect_xywh(
 
 #endif // LAY_INCLUDE_HEADER
 
-// Notes about the use of vector_size merely for syntax convenience:
+// 关于仅出于语法方便而使用vector_size的注意事项：
 //
-// The current layout calculation procedures are not written in a way that
-// would benefit from SIMD instruction usage.
+// 当前的布局计算过程并不是以能够从SIMD指令使用中获益为目标编写的。
 //
-// (Passing 128-bit float4 vectors using __vectorcall *might* get you some
-// small benefit in very specific situations, but is unlikely to be worth the
-// hassle. And I believe this would only be needed if you compiled the library
-// in a way where the compiler was prevented from using inlining when copying
-// rectangle/size data.)
+// (通过使用__vectorcall传递128位float4向量，在某些特定情况下可能会带来一些小的好处，但这很可能不值得麻烦。
+// 我相信只有在以防止编译器在复制矩形/大小数据时进行内联优化的方式下，才需要这样做。)
 //
-// I might go back in the future and just use regular struct-wrapped arrays.
-// I'm not sure if relying the vector thing in GCC/clang and then using C++
-// operator overloading in MSVC is worth the annoyance of saving a couple of
-// extra characters on each array access in the implementation code.
+// 将来我可能会回头改用常规结构封装数组。
+// 我不确定在GCC/clang中依赖向量处理，并在MSVC中使用C++运算符重载是否值得为了在实现代码中每个数组访问上节省几个额外字符而感到困扰。
 
 #ifdef LAY_IMPLEMENTATION
 
